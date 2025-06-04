@@ -827,3 +827,33 @@ function vqr_handle_zip_download($wpdb, $table_name, $ids) {
         }
     }
 }
+
+/**
+ * Display QR scan data meta box content
+ */
+function vqr_display_scan_data($post) {
+    global $wpdb;
+    $table_name = $wpdb->prefix . 'vqr_codes';
+    
+    $qr_codes = $wpdb->get_results(
+        $wpdb->prepare(
+            "SELECT * FROM $table_name WHERE post_id = %d",
+            $post->ID
+        )
+    );
+    
+    if ($qr_codes) {
+        echo '<h4>Associated QR Codes</h4>';
+        foreach ($qr_codes as $code) {
+            echo '<div style="margin-bottom: 10px; padding: 10px; border: 1px solid #ddd;">';
+            echo '<strong>Batch Code:</strong> ' . esc_html($code->batch_code) . '<br>';
+            echo '<strong>Scan Count:</strong> ' . esc_html($code->scan_count) . '<br>';
+            echo '<strong>First Scanned:</strong> ' . ($code->first_scanned_at ? esc_html($code->first_scanned_at) : 'Never') . '<br>';
+            echo '<a href="' . esc_url($code->url) . '" target="_blank">View QR Code</a>';
+            echo '</div>';
+        }
+    } else {
+        echo '<p>No QR codes associated with this strain yet.</p>';
+        echo '<p><a href="' . admin_url('admin.php?page=verification_qr_manager') . '">Generate QR Codes</a></p>';
+    }
+}
