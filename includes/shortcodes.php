@@ -9,7 +9,7 @@ defined('ABSPATH') || exit;
  * Shortcode to display up-to-date scan data by querying the DB on each hit.
  * Usage: [qr_scan_data]
  */
-function vqr_display_scan_data() {
+function vqr_shortcode_display_scan_data() {
     // Require a qr_id in the URL
     if ( empty( $_GET['qr_id'] ) ) {
         return '<p>No QR Scan data available.</p>';
@@ -48,7 +48,7 @@ function vqr_display_scan_data() {
     return ob_get_clean();
 }
 remove_shortcode( 'qr_scan_data' );
-add_shortcode( 'qr_scan_data', 'vqr_display_scan_data' );
+add_shortcode( 'qr_scan_data', 'vqr_shortcode_display_scan_data' );
 
 /**
  * Shortcode: [qr_batch_code]

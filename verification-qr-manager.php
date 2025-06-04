@@ -31,8 +31,8 @@ spl_autoload_register( function( $class ) {
     }
 } );
 
-// Start session if needed
-if (!session_id()) {
+// Start session if needed (only on frontend)
+if (!is_admin() && !session_id()) {
     session_start();
 }
 

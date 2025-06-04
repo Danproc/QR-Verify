@@ -64,34 +64,54 @@ function vqr_generate_codes( $count, $base_url, $category, $post_id, $prefix = '
         $logo_h   = $logo_w = 0;
         if ( $logo_path && file_exists( $logo_path ) ) {
             $info = getimagesize( $logo_path );
-            if ( $info['mime'] === 'image/png' ) {
-                $orig = imagecreatefrompng( $logo_path );
-            } else {
-                $orig = imagecreatefromjpeg( $logo_path );
+            $orig = false;
+            
+            if ( $info && isset( $info['mime'] ) ) {
+                switch ( $info['mime'] ) {
+                    case 'image/png':
+                        $orig = imagecreatefrompng( $logo_path );
+                        break;
+                    case 'image/jpeg':
+                    case 'image/jpg':
+                        $orig = imagecreatefromjpeg( $logo_path );
+                        break;
+                    case 'image/webp':
+                        if ( function_exists( 'imagecreatefromwebp' ) ) {
+                            $orig = imagecreatefromwebp( $logo_path );
+                        }
+                        break;
+                }
             }
-            $ow = imagesx( $orig );
-            $oh = imagesy( $orig );
+            
+            if ( !$orig ) {
+                error_log( "Failed to create image from logo: {$logo_path} (mime: " . ($info['mime'] ?? 'unknown') . ")" );
+                // Proceed without logo
+                $logo_path = '';
+            } else {
+                $ow = imagesx( $orig );
+                $oh = imagesy( $orig );
 
-            // Scale logo to fit inside the QR's dark area (exclude the white border)
-            $moduleSize    = 6;   // Must match the 4th param of QRcode::png()
-            $marginModules = 2;   // phpqrcode default margin
-            $innerWidth    = $w - (2 * $marginModules * $moduleSize);
+                // Scale logo to fit inside the QR's dark area (exclude the white border)
+                $moduleSize    = 6;   // Must match the 4th param of QRcode::png()
+                $marginModules = 2;   // phpqrcode default margin
+                $innerWidth    = $w - (2 * $marginModules * $moduleSize);
 
-            // Clamp logo width to inner dark-area width
-            $logo_w = min( $innerWidth, $w );
-            $logo_h = intval( ( $oh / $ow ) * $logo_w );
+                // Clamp logo width to inner dark-area width
+                $logo_w = min( $innerWidth, $w );
+                $logo_h = intval( ( $oh / $ow ) * $logo_w );
 
-            $logo_img = imagecreatetruecolor( $logo_w, $logo_h );
-            imagealphablending( $logo_img, false );
-            imagesavealpha( $logo_img, true );
-            imagecopyresampled(
-                $logo_img,
-                $orig,
-                0, 0, 0, 0,
-                $logo_w, $logo_h,
-                $ow, $oh
-            );
-            imagedestroy( $orig );
+                $logo_img = imagecreatetruecolor( $logo_w, $logo_h );
+                imagealphablending( $logo_img, false );
+                imagesavealpha( $logo_img, true );
+                imagecopyresampled(
+                    $logo_img,
+                    $orig,
+                    0, 0, 0, 0,
+                    $logo_w, $logo_h,
+                    $ow, $oh
+                );
+                imagedestroy( $orig );
+            }
         }
 
         // Build final canvas with border, logo, QR and text
