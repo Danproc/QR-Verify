@@ -319,6 +319,15 @@ function vqr_display_admin_page() {
                name="download_qr_codes"
                class="button button-primary"
                value="Download Selected">
+               
+        <button type="submit" 
+                name="download_pdf" 
+                class="button button-primary"
+                formaction="<?php echo admin_url('admin-post.php'); ?>"
+                formmethod="post">
+            <input type="hidden" name="action" value="download_qr_pdf">
+            Download PDF
+        </button>
 
         <input type="submit"
                name="reset_scan_counts"
@@ -338,16 +347,31 @@ function vqr_display_admin_page() {
 }
 
 /**
- * Add meta boxes for custom post types
+ * Display QR scan data meta box content
  */
-function vqr_add_meta_boxes() {
-    add_meta_box(
-        'vqr_scan_data',
-        'QR Code Scan Data',
-        'vqr_display_scan_data',
-        'strain',
-        'side',
-        'high'
+function vqr_display_scan_data($post) {
+    global $wpdb;
+    $table_name = $wpdb->prefix . 'vqr_codes';
+    
+    $qr_codes = $wpdb->get_results(
+        $wpdb->prepare(
+            "SELECT * FROM $table_name WHERE post_id = %d",
+            $post->ID
+        )
     );
+    
+    if ($qr_codes) {
+        echo '<h4>Associated QR Codes</h4>';
+        foreach ($qr_codes as $code) {
+            echo '<div style="margin-bottom: 10px; padding: 10px; border: 1px solid #ddd;">';
+            echo '<strong>Batch Code:</strong> ' . esc_html($code->batch_code) . '<br>';
+            echo '<strong>Scan Count:</strong> ' . esc_html($code->scan_count) . '<br>';
+            echo '<strong>First Scanned:</strong> ' . ($code->first_scanned_at ? esc_html($code->first_scanned_at) : 'Never') . '<br>';
+            echo '<a href="' . esc_url($code->url) . '" target="_blank">View QR Code</a>';
+            echo '</div>';
+        }
+    } else {
+        echo '<p>No QR codes associated with this strain yet.</p>';
+        echo '<p><a href="' . admin_url('admin.php?page=verification_qr_manager') . '">Generate QR Codes</a></p>';
+    }
 }
-add_action('add_meta_boxes', 'vqr_add_meta_boxes');

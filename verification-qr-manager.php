@@ -38,6 +38,7 @@ if (!session_id()) {
 
 // Include required files
 require_once VQR_PLUGIN_DIR . 'includes/database.php';
+require_once VQR_PLUGIN_DIR . 'includes/strain-post-type.php';
 require_once VQR_PLUGIN_DIR . 'includes/admin-page.php';
 require_once VQR_PLUGIN_DIR . 'includes/qr-generator.php';
 require_once VQR_PLUGIN_DIR . 'includes/qr-scanner.php';
