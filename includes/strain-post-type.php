@@ -141,6 +141,15 @@ function vqr_add_strain_meta_boxes() {
         'side',
         'default'
     );
+    
+    add_meta_box(
+        'vqr_scan_data',
+        'QR Code Scan Data',
+        'vqr_display_scan_data',
+        'strain',
+        'side',
+        'high'
+    );
 }
 add_action('add_meta_boxes', 'vqr_add_strain_meta_boxes');
 

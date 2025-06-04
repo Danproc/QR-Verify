@@ -5,8 +5,6 @@
 
 defined('ABSPATH') || exit;
 
-use Com\Tecnick\Pdf\Tcpdf;
-
 /**
  * Admin-post handler to build and download the 700 mm PDF sheet.
  */
@@ -41,7 +39,7 @@ function vqr_download_pdf_sheet() {
     $pageH   = $mTop + $rowsN*$stH + ($rowsN-1)*$gY + $mBot;
 
     // Init TCPDF
-    $pdf = new Tcpdf('P','mm',[$pageW,$pageH],true,'UTF-8',false);
+    $pdf = new \Com\Tecnick\Pdf\Tcpdf('P','mm',[$pageW,$pageH],true,'UTF-8',false);
     $pdf->SetMargins($mLeft,$mTop,$mRight);
     $pdf->setPrintHeader(false);
     $pdf->setPrintFooter(false);
