@@ -130,6 +130,84 @@ QR codes automatically track scans when accessed via the generated URLs. Scan da
 - Hooks and filters for customization
 - Clean separation of concerns
 
+## Frontend Styling Guide
+
+The QR-Verify strain template uses a comprehensive CSS class system with a `vqr-` prefix. The design follows a dark Mac-like aesthetic optimized for mobile viewing.
+
+### CSS Class Reference
+
+#### Layout Classes
+- `.vqr-strain-page` - Body class for the strain display page
+- `.vqr-container` - Main container with gradient background and glass effect
+- `.vqr-header` - Top section containing logo and title
+- `.vqr-main-content` - Primary content wrapper
+- `.vqr-footer` - Bottom section with verification text
+
+#### Header Components
+- `.vqr-logo` - Logo container
+- `.vqr-logo-img` - Logo image styling (48x48px rounded)
+- `.vqr-title-section` - Title and company info wrapper
+- `.vqr-strain-title` - Main strain/product title
+- `.vqr-companies` - Company tags container
+- `.vqr-company-tag` - Individual company badge (blue gradient)
+
+#### Content Sections
+- `.vqr-section-title` - Section headers with bottom border
+- `.vqr-basic-info` - Basic information section
+- `.vqr-cannabinoids` - Cannabinoid profile section
+- `.vqr-description` - Product description section
+- `.vqr-social-links` - Social media links section
+- `.vqr-scan-info` - Verification information section
+
+#### Product Information
+- `.vqr-product-image` - Product image container
+- `.vqr-product-img` - Product image styling (max 200px height)
+- `.vqr-info-item` - Key-value pair row
+- `.vqr-label` - Information label (gray text)
+- `.vqr-value` - Information value (white text)
+- `.vqr-batch-code` - Special styling for batch codes (monospace, red accent)
+
+#### Cannabinoid Display
+- `.vqr-cannabinoid-grid` - 2-column grid for cannabinoids
+- `.vqr-cannabinoid-item` - Individual cannabinoid card
+- `.vqr-thc` - THC-specific styling (red gradient)
+- `.vqr-cbd` - CBD-specific styling (green gradient)
+- `.vqr-cannabinoid-label` - Cannabinoid type label
+- `.vqr-cannabinoid-value` - Main percentage display
+- `.vqr-cannabinoid-mg` - Milligram amount display
+
+#### Social Media
+- `.vqr-social-grid` - Horizontal scrollable social links
+- `.vqr-social-link` - Individual social media button
+- `.vqr-instagram/.vqr-telegram/.vqr-facebook/.vqr-twitter` - Platform-specific hover colors
+- `.vqr-social-icon` - Social media emoji/icon
+- `.vqr-social-text` - Social platform name
+
+#### Verification Elements
+- `.vqr-scan-stats` - Scan statistics container
+- `.vqr-stat-item` - Individual statistic card
+- `.vqr-stat-label` - Statistic label
+- `.vqr-stat-value` - Statistic value (green text)
+- `.vqr-verification-badge` - Main verification status badge
+- `.vqr-authentic` - Authentic product styling (green gradient)
+- `.vqr-fake` - Fake product warning (red gradient with pulse animation)
+- `.vqr-badge-icon` - Verification icon (✓ or ⚠)
+- `.vqr-badge-text` - Verification status text
+
+#### Description Content
+- `.vqr-description-content` - Description text container with blue left border
+
+### Design System
+- **Colors**: Dark theme (#1a1a1a background, #ffffff text, #007aff accents)
+- **Typography**: Apple system fonts (-apple-system, SF Pro Display)
+- **Spacing**: 16px base unit, 12px for smaller gaps
+- **Borders**: Rounded corners (8px-16px), subtle borders (#3a3a3a)
+- **Effects**: Glass morphism with backdrop-filter and gradients
+- **Responsive**: Optimized for mobile-first (420px max width)
+
+### Customization
+To customize the styling, modify `assets/frontend-style.css`. All classes use the `vqr-` prefix to avoid conflicts with WordPress themes.
+
 ## Author
 Dan Proctor  
 Website: https://thenorthern-web.co.uk/
