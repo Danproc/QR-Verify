@@ -28,75 +28,8 @@ function vqr_display_admin_page() {
     global $wpdb;
     $table_name = $wpdb->prefix . 'vqr_codes';
 
-    //
-    // 1) HANDLE ALL POST ACTIONS
-    //
-    // a) Generate new QR codes
-    if ( isset( $_POST['generate_qr_codes'] ) ) {
-        $count    = intval( $_POST['qr_count'] );
-        $base_url = esc_url_raw( $_POST['base_url'] );
-        $gen_cat  = sanitize_text_field( $_POST['category'] );
-        $post_id  = intval( $_POST['post_id'] );
-        $prefix   = sanitize_text_field( $_POST['code_prefix'] );
-
-        // Optional logo
-        $logo_path = '';
-        if ( ! empty( $_FILES['logo_file']['name'] ) ) {
-            require_once ABSPATH . 'wp-admin/includes/file.php';
-            $upl = wp_handle_upload( $_FILES['logo_file'], [
-                'test_form' => false,
-                'mimes'     => [ 'png' => 'image/png', 'jpg|jpeg' => 'image/jpeg' ],
-            ] );
-            if ( empty( $upl['error'] ) ) {
-                $logo_path = $upl['file'];
-            }
-        }
-
-        if ( $count > 0 && filter_var( $base_url, FILTER_VALIDATE_URL ) ) {
-            vqr_generate_codes( $count, $base_url, $gen_cat, $post_id, $prefix, $logo_path );
-            echo "<div class='updated notice is-dismissible'><p>Generated {$count} QR codes.</p></div>";
-        } else {
-            echo "<div class='error notice is-dismissible'><p>Invalid input for generating QR codes.</p></div>";
-        }
-    }
-
-    // b) Delete selected
-    if ( isset( $_POST['delete_qr_codes'] ) && ! empty( $_POST['qr_ids'] ) ) {
-        $ids        = array_map( 'intval', $_POST['qr_ids'] );
-        $placeholders = implode( ',', array_fill( 0, count( $ids ), '%d' ) );
-        $wpdb->query(
-            $wpdb->prepare( "DELETE FROM {$table_name} WHERE id IN ({$placeholders})", ...$ids )
-        );
-        echo "<div class='updated notice is-dismissible'><p>Deleted selected QR codes.</p></div>";
-    }
-
-    // c) Individual reset (single-row button)
-    if ( isset( $_POST['reset_scan_count'] ) && ! empty( $_POST['qr_id'] ) ) {
-        if ( check_admin_referer( 'vqr_reset_scan_count', 'vqr_reset_scan_count_nonce' ) ) {
-            $qr_id = intval( $_POST['qr_id'] );
-            $old   = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$table_name} WHERE id = %d", $qr_id ) );
-
-            $updated = $wpdb->update(
-                $table_name,
-                [ 'scan_count' => 0, 'first_scanned_at' => null ],
-                [ 'id' => $qr_id ],
-                [ '%d', '%s' ],
-                [ '%d' ]
-            );
-
-            if ( $updated !== false ) {
-                if ( $old && $old->post_id ) {
-                    delete_post_meta( $old->post_id, 'times_scanned' );
-                    delete_post_meta( $old->post_id, 'first_scanned_date' );
-                }
-                echo "<div class='updated notice is-dismissible'><p>Reset scan count for ID {$qr_id}.</p></div>";
-            } else {
-                echo "<div class='error notice is-dismissible'><p>Failed to reset scan count for ID {$qr_id}.</p></div>";
-            }
-        } else {
-            echo "<div class='error notice is-dismissible'><p>Security check failed.</p></div>";
-        }
-    }
+    // Handle all POST actions
+    vqr_handle_admin_actions($wpdb, $table_name);
 
     // d) Bulk reset
     if ( isset( $_POST['reset_scan_counts'] ) && ! empty( $_POST['qr_ids'] ) ) {

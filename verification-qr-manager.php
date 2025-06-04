@@ -40,7 +40,7 @@ if (!is_admin() && !session_id()) {
 require_once VQR_PLUGIN_DIR . 'includes/database.php';
 require_once VQR_PLUGIN_DIR . 'includes/strain-post-type.php';
 require_once VQR_PLUGIN_DIR . 'includes/strain-templates.php';
-require_once VQR_PLUGIN_DIR . 'includes/admin-page.php';
+require_once VQR_PLUGIN_DIR . 'includes/admin-page-modern.php';
 require_once VQR_PLUGIN_DIR . 'includes/qr-generator.php';
 require_once VQR_PLUGIN_DIR . 'includes/qr-scanner.php';
 require_once VQR_PLUGIN_DIR . 'includes/shortcodes.php';
@@ -50,6 +50,12 @@ require_once VQR_PLUGIN_DIR . 'includes/pdf-generator.php';
 // Enqueue admin styles
 add_action( 'admin_enqueue_scripts', function() {
     wp_enqueue_style( 'dashicons' );
+    
+    // Enqueue modern admin styles on QR Codes page
+    $screen = get_current_screen();
+    if ($screen && $screen->id === 'toplevel_page_verification_qr_manager') {
+        wp_enqueue_style( 'vqr-admin-style', VQR_PLUGIN_URL . 'assets/admin-style.css', array(), '1.0.0' );
+    }
 } );
 
 // Plugin activation hook

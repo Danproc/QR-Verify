@@ -174,8 +174,33 @@ function vqr_download_pdf_sheet() {
                     
                     $img_path = str_replace( home_url('/'), ABSPATH, $code->qr_code );
                     if ( file_exists($img_path) ):
+                        // Get actual image dimensions to calculate proper cut line size
+                        $img_info = getimagesize($img_path);
+                        if ($img_info) {
+                            $img_width_px = $img_info[0];
+                            $img_height_px = $img_info[1];
+                            
+                            // Convert pixels to mm (assuming 96 DPI)
+                            $px_to_mm = 25.4 / 96;
+                            $img_width_mm = $img_width_px * $px_to_mm;
+                            $img_height_mm = $img_height_px * $px_to_mm;
+                            
+                            // Ensure width never exceeds 35mm
+                            $cut_width = min($img_width_mm, 35);
+                            $cut_height = $img_height_mm * ($cut_width / $img_width_mm); // Maintain aspect ratio
+                            
+                            // Center the cut line within the sticker area
+                            $cut_x = $x + ($stW - $cut_width) / 2;
+                            $cut_y = $y + ($stH - $cut_height) / 2;
+                        } else {
+                            // Fallback to original dimensions if image info unavailable
+                            $cut_width = $stW;
+                            $cut_height = $stH;
+                            $cut_x = $x;
+                            $cut_y = $y;
+                        }
                 ?>
-                    <div class="cut-contour" style="left: <?php echo $x; ?>mm; top: <?php echo $y; ?>mm; width: <?php echo $stW; ?>mm; height: <?php echo $stH; ?>mm;"></div>
+                    <div class="cut-contour" style="left: <?php echo $cut_x; ?>mm; top: <?php echo $cut_y; ?>mm; width: <?php echo $cut_width; ?>mm; height: <?php echo $cut_height; ?>mm;"></div>
                 <?php endif; endforeach; ?>
             </div>
         </div>
