@@ -1,0 +1,13 @@
+/* Style for Verification QR Manager plugin */
+.wrap h1 {
+    font-size: 1.5em;
+    margin-bottom: 20px;
+}
+.table {
+    width: 100%;
+    border-collapse: collapse;
+}
+.table th, .table td {
+    padding: 10px;
+    text-align: left;
+}
