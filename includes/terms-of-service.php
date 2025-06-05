@@ -29,10 +29,16 @@ function vqr_get_tos_url() {
     }
     
     // Try to find page by title as fallback
-    $tos_page = get_page_by_title('Terms of Service');
-    if ($tos_page) {
-        update_option('vqr_tos_page_id', $tos_page->ID);
-        return get_permalink($tos_page->ID);
+    $pages = get_pages(array(
+        'post_status' => 'publish',
+        'number' => 100
+    ));
+    
+    foreach ($pages as $page) {
+        if ($page->post_title === 'Terms of Service') {
+            update_option('vqr_tos_page_id', $page->ID);
+            return get_permalink($page->ID);
+        }
     }
     
     // Auto-create the page if it doesn't exist and we can
@@ -58,10 +64,16 @@ function vqr_get_privacy_policy_url() {
     }
     
     // Try to find page by title as fallback
-    $privacy_page = get_page_by_title('Privacy Policy');
-    if ($privacy_page) {
-        update_option('vqr_privacy_page_id', $privacy_page->ID);
-        return get_permalink($privacy_page->ID);
+    $pages = get_pages(array(
+        'post_status' => 'publish',
+        'number' => 100
+    ));
+    
+    foreach ($pages as $page) {
+        if ($page->post_title === 'Privacy Policy') {
+            update_option('vqr_privacy_page_id', $page->ID);
+            return get_permalink($page->ID);
+        }
     }
     
     // Auto-create the page if it doesn't exist and we can
@@ -302,8 +314,11 @@ function vqr_create_default_legal_pages() {
     );
     
     $tos_page_id = wp_insert_post($tos_page);
-    if ($tos_page_id) {
+    if ($tos_page_id && !is_wp_error($tos_page_id)) {
         update_option('vqr_tos_page_id', $tos_page_id);
+        error_log("VQR: Created Terms of Service page with ID: " . $tos_page_id);
+    } else if (is_wp_error($tos_page_id)) {
+        error_log("VQR: Failed to create Terms of Service page: " . $tos_page_id->get_error_message());
     }
     
     // Create Privacy Policy page
@@ -316,8 +331,11 @@ function vqr_create_default_legal_pages() {
     );
     
     $privacy_page_id = wp_insert_post($privacy_page);
-    if ($privacy_page_id) {
+    if ($privacy_page_id && !is_wp_error($privacy_page_id)) {
         update_option('vqr_privacy_page_id', $privacy_page_id);
+        error_log("VQR: Created Privacy Policy page with ID: " . $privacy_page_id);
+    } else if (is_wp_error($privacy_page_id)) {
+        error_log("VQR: Failed to create Privacy Policy page: " . $privacy_page_id->get_error_message());
     }
     
     // Mark as created
@@ -428,10 +446,30 @@ add_action('admin_init', function() {
         if (isset($_GET['vqr_create_legal_pages']) && wp_verify_nonce($_GET['_wpnonce'], 'vqr_create_legal_pages')) {
             // Force recreation by removing the flag first
             delete_option('vqr_legal_pages_created');
+            delete_option('vqr_tos_page_id');
+            delete_option('vqr_privacy_page_id');
+            
+            // Force creation
             vqr_create_default_legal_pages();
             
             wp_redirect(add_query_arg('legal_pages_created', '1', admin_url('admin.php?page=verification_qr_manager')));
             exit;
+        }
+        
+        // Debug action to show page status
+        if (isset($_GET['vqr_debug_legal_pages']) && wp_verify_nonce($_GET['_wpnonce'], 'vqr_debug_legal_pages')) {
+            $tos_id = get_option('vqr_tos_page_id');
+            $privacy_id = get_option('vqr_privacy_page_id');
+            $pages_created = get_option('vqr_legal_pages_created');
+            
+            echo '<div class="notice notice-info"><p>';
+            echo '<strong>Debug Info:</strong><br>';
+            echo 'TOS Page ID: ' . ($tos_id ? $tos_id . ' (Status: ' . get_post_status($tos_id) . ')' : 'Not set') . '<br>';
+            echo 'Privacy Page ID: ' . ($privacy_id ? $privacy_id . ' (Status: ' . get_post_status($privacy_id) . ')' : 'Not set') . '<br>';
+            echo 'Legal Pages Created Flag: ' . ($pages_created ? 'Yes' : 'No') . '<br>';
+            echo 'TOS URL: ' . vqr_get_tos_url() . '<br>';
+            echo 'Privacy URL: ' . vqr_get_privacy_policy_url();
+            echo '</p></div>';
         }
     }
 });

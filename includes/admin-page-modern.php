@@ -794,9 +794,15 @@ function vqr_show_legal_page_notices() {
             'vqr_create_legal_pages'
         );
         
+        $debug_url = wp_nonce_url(
+            admin_url('admin.php?page=verification_qr_manager&vqr_debug_legal_pages=1'),
+            'vqr_debug_legal_pages'
+        );
+        
         echo '<div class="notice notice-warning"><p>';
         echo '<strong>Legal Pages Missing:</strong> Terms of Service and/or Privacy Policy pages are required for user registration. ';
-        echo '<a href="' . esc_url($create_url) . '" class="button button-primary">Create Legal Pages</a>';
+        echo '<a href="' . esc_url($create_url) . '" class="button button-primary">Create Legal Pages</a> ';
+        echo '<a href="' . esc_url($debug_url) . '" class="button button-secondary">Debug Info</a>';
         echo '</p></div>';
     }
 }
