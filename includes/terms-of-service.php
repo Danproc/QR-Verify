@@ -184,7 +184,7 @@ function vqr_check_tos_acceptance_required() {
     }
     
     // Skip for public pages
-    $public_pages = array('login', 'register', 'forgot-password', 'verify-email', 'terms-of-service', 'privacy-policy');
+    $public_pages = array('login', 'register', 'forgot-password', 'verify-email', 'terms-of-service', 'privacy-policy', 'terms-acceptance');
     $current_page = get_query_var('vqr_app_page');
     
     if (in_array($current_page, $public_pages)) {
