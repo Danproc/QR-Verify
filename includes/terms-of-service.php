@@ -23,73 +23,14 @@ function vqr_set_tos_version($version) {
  * Get Terms of Service URL
  */
 function vqr_get_tos_url() {
-    $tos_page_id = get_option('vqr_tos_page_id');
-    if ($tos_page_id && get_post_status($tos_page_id) === 'publish') {
-        return get_permalink($tos_page_id);
-    }
-    
-    // Try to find page by title as fallback
-    $pages = get_pages(array(
-        'post_status' => 'publish',
-        'number' => 100
-    ));
-    
-    foreach ($pages as $page) {
-        if ($page->post_title === 'Terms of Service') {
-            update_option('vqr_tos_page_id', $page->ID);
-            return get_permalink($page->ID);
-        }
-    }
-    
-    // Auto-create the page if it doesn't exist and we can
-    if (current_user_can('manage_options')) {
-        vqr_create_default_legal_pages();
-        $tos_page_id = get_option('vqr_tos_page_id');
-        if ($tos_page_id && get_post_status($tos_page_id) === 'publish') {
-            return get_permalink($tos_page_id);
-        }
-    }
-    
-    // Fallback to external URL if set
-    return get_option('vqr_tos_url', home_url('/terms-of-service/'));
+    return home_url('/terms-of-service/');
 }
 
 /**
  * Get Privacy Policy URL
  */
 function vqr_get_privacy_policy_url() {
-    $privacy_page_id = get_option('vqr_privacy_page_id');
-    if ($privacy_page_id && get_post_status($privacy_page_id) === 'publish') {
-        return get_permalink($privacy_page_id);
-    }
-    
-    // Try to find page by title as fallback
-    $pages = get_pages(array(
-        'post_status' => 'publish',
-        'number' => 100
-    ));
-    
-    foreach ($pages as $page) {
-        if ($page->post_title === 'Privacy Policy') {
-            update_option('vqr_privacy_page_id', $page->ID);
-            return get_permalink($page->ID);
-        }
-    }
-    
-    // Auto-create the page if it doesn't exist and we can
-    if (current_user_can('manage_options')) {
-        vqr_create_default_legal_pages();
-        $privacy_page_id = get_option('vqr_privacy_page_id');
-        if ($privacy_page_id && get_post_status($privacy_page_id) === 'publish') {
-            return get_permalink($privacy_page_id);
-        }
-    }
-    
-    // Fallback to WordPress privacy policy page
-    if (function_exists('get_privacy_policy_url') && get_privacy_policy_url()) {
-        return get_privacy_policy_url();
-    }
-    return get_option('vqr_privacy_url', home_url('/privacy-policy/'));
+    return home_url('/privacy-policy/');
 }
 
 /**

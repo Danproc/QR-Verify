@@ -781,30 +781,8 @@ function vqr_show_legal_page_notices() {
         echo '<div class="notice notice-success is-dismissible"><p><strong>Legal pages created successfully!</strong> Terms of Service and Privacy Policy pages are now available.</p></div>';
     }
     
-    // Check if legal pages exist
-    $tos_page_id = get_option('vqr_tos_page_id');
-    $privacy_page_id = get_option('vqr_privacy_page_id');
-    
-    $tos_exists = $tos_page_id && get_post_status($tos_page_id) === 'publish';
-    $privacy_exists = $privacy_page_id && get_post_status($privacy_page_id) === 'publish';
-    
-    if (!$tos_exists || !$privacy_exists) {
-        $create_url = wp_nonce_url(
-            admin_url('admin.php?page=verification_qr_manager&vqr_create_legal_pages=1'),
-            'vqr_create_legal_pages'
-        );
-        
-        $debug_url = wp_nonce_url(
-            admin_url('admin.php?page=verification_qr_manager&vqr_debug_legal_pages=1'),
-            'vqr_debug_legal_pages'
-        );
-        
-        echo '<div class="notice notice-warning"><p>';
-        echo '<strong>Legal Pages Missing:</strong> Terms of Service and/or Privacy Policy pages are required for user registration. ';
-        echo '<a href="' . esc_url($create_url) . '" class="button button-primary">Create Legal Pages</a> ';
-        echo '<a href="' . esc_url($debug_url) . '" class="button button-secondary">Debug Info</a>';
-        echo '</p></div>';
-    }
+    // Note: Legal page existence checking removed - pages are created manually
+    // Links point to /terms-of-service/ and /privacy-policy/ which should be created manually
 }
 add_action('admin_notices', 'vqr_show_legal_page_notices');
 
