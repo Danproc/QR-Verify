@@ -24,9 +24,26 @@ function vqr_set_tos_version($version) {
  */
 function vqr_get_tos_url() {
     $tos_page_id = get_option('vqr_tos_page_id');
-    if ($tos_page_id) {
+    if ($tos_page_id && get_post_status($tos_page_id) === 'publish') {
         return get_permalink($tos_page_id);
     }
+    
+    // Try to find page by title as fallback
+    $tos_page = get_page_by_title('Terms of Service');
+    if ($tos_page) {
+        update_option('vqr_tos_page_id', $tos_page->ID);
+        return get_permalink($tos_page->ID);
+    }
+    
+    // Auto-create the page if it doesn't exist and we can
+    if (current_user_can('manage_options')) {
+        vqr_create_default_legal_pages();
+        $tos_page_id = get_option('vqr_tos_page_id');
+        if ($tos_page_id && get_post_status($tos_page_id) === 'publish') {
+            return get_permalink($tos_page_id);
+        }
+    }
+    
     // Fallback to external URL if set
     return get_option('vqr_tos_url', home_url('/terms-of-service/'));
 }
@@ -36,9 +53,26 @@ function vqr_get_tos_url() {
  */
 function vqr_get_privacy_policy_url() {
     $privacy_page_id = get_option('vqr_privacy_page_id');
-    if ($privacy_page_id) {
+    if ($privacy_page_id && get_post_status($privacy_page_id) === 'publish') {
         return get_permalink($privacy_page_id);
     }
+    
+    // Try to find page by title as fallback
+    $privacy_page = get_page_by_title('Privacy Policy');
+    if ($privacy_page) {
+        update_option('vqr_privacy_page_id', $privacy_page->ID);
+        return get_permalink($privacy_page->ID);
+    }
+    
+    // Auto-create the page if it doesn't exist and we can
+    if (current_user_can('manage_options')) {
+        vqr_create_default_legal_pages();
+        $privacy_page_id = get_option('vqr_privacy_page_id');
+        if ($privacy_page_id && get_post_status($privacy_page_id) === 'publish') {
+            return get_permalink($privacy_page_id);
+        }
+    }
+    
     // Fallback to WordPress privacy policy page
     if (function_exists('get_privacy_policy_url') && get_privacy_policy_url()) {
         return get_privacy_policy_url();
@@ -375,3 +409,29 @@ function vqr_get_default_privacy_content() {
 
 // Create legal pages on plugin activation
 add_action('vqr_plugin_activated', 'vqr_create_default_legal_pages');
+
+/**
+ * Ensure legal pages exist (call this on admin init)
+ */
+function vqr_ensure_legal_pages_exist() {
+    if (!get_option('vqr_legal_pages_created')) {
+        vqr_create_default_legal_pages();
+    }
+}
+
+// Also create pages on admin init if they don't exist
+add_action('admin_init', function() {
+    if (current_user_can('manage_options')) {
+        vqr_ensure_legal_pages_exist();
+        
+        // Handle manual page creation request
+        if (isset($_GET['vqr_create_legal_pages']) && wp_verify_nonce($_GET['_wpnonce'], 'vqr_create_legal_pages')) {
+            // Force recreation by removing the flag first
+            delete_option('vqr_legal_pages_created');
+            vqr_create_default_legal_pages();
+            
+            wp_redirect(add_query_arg('legal_pages_created', '1', admin_url('admin.php?page=verification_qr_manager')));
+            exit;
+        }
+    }
+});

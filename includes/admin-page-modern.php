@@ -18,6 +18,16 @@ function vqr_add_admin_page() {
         'dashicons-qrcode',
         6
     );
+    
+    // Add submenu for user management
+    add_submenu_page(
+        'verification_qr_manager',
+        'QR User Management',
+        'User Management',
+        'manage_options',
+        'vqr_user_management',
+        'vqr_display_user_management_page'
+    );
 }
 add_action('admin_menu', 'vqr_add_admin_page');
 
@@ -759,6 +769,40 @@ function vqr_admin_notice($message, $type = 'info') {
 }
 
 /**
+ * Show admin notices for legal page status
+ */
+function vqr_show_legal_page_notices() {
+    if (!current_user_can('manage_options')) {
+        return;
+    }
+    
+    // Check if legal pages created notice
+    if (isset($_GET['legal_pages_created'])) {
+        echo '<div class="notice notice-success is-dismissible"><p><strong>Legal pages created successfully!</strong> Terms of Service and Privacy Policy pages are now available.</p></div>';
+    }
+    
+    // Check if legal pages exist
+    $tos_page_id = get_option('vqr_tos_page_id');
+    $privacy_page_id = get_option('vqr_privacy_page_id');
+    
+    $tos_exists = $tos_page_id && get_post_status($tos_page_id) === 'publish';
+    $privacy_exists = $privacy_page_id && get_post_status($privacy_page_id) === 'publish';
+    
+    if (!$tos_exists || !$privacy_exists) {
+        $create_url = wp_nonce_url(
+            admin_url('admin.php?page=verification_qr_manager&vqr_create_legal_pages=1'),
+            'vqr_create_legal_pages'
+        );
+        
+        echo '<div class="notice notice-warning"><p>';
+        echo '<strong>Legal Pages Missing:</strong> Terms of Service and/or Privacy Policy pages are required for user registration. ';
+        echo '<a href="' . esc_url($create_url) . '" class="button button-primary">Create Legal Pages</a>';
+        echo '</p></div>';
+    }
+}
+add_action('admin_notices', 'vqr_show_legal_page_notices');
+
+/**
  * Handle individual reset (legacy support)
  */
 function vqr_handle_individual_reset($wpdb, $table_name) {
@@ -857,3 +901,310 @@ function vqr_display_scan_data($post) {
         echo '<p><a href="' . admin_url('admin.php?page=verification_qr_manager') . '">Generate QR Codes</a></p>';
     }
 }
+
+/**
+ * Display User Management Page
+ */
+function vqr_display_user_management_page() {
+    // Handle form submissions
+    if (isset($_POST['action']) && wp_verify_nonce($_POST['vqr_user_nonce'], 'vqr_user_management')) {
+        vqr_handle_user_management_actions();
+    }
+    
+    // Handle sync all action
+    if (isset($_POST['sync_all_users'])) {
+        $synced = vqr_sync_all_users();
+        echo '<div class="notice notice-success"><p>' . sprintf('Successfully synced %d users.', $synced) . '</p></div>';
+    }
+    
+    ?>
+    <div class="wrap">
+        <h1>QR User Management</h1>
+        
+        <!-- Sync All Users -->
+        <div class="card" style="margin-bottom: 20px;">
+            <h2>Sync User Roles</h2>
+            <p>Automatically sync all users' WordPress roles with their subscription plans.</p>
+            <form method="post">
+                <?php wp_nonce_field('vqr_sync_users', 'sync_users_nonce'); ?>
+                <input type="submit" name="sync_all_users" class="button button-primary" value="Sync All Users" 
+                       onclick="return confirm('This will update all QR customer roles and quotas. Continue?');">
+            </form>
+        </div>
+
+        <!-- QR Customers Table -->
+        <div class="card">
+            <h2>QR Customers</h2>
+            <?php vqr_display_qr_customers_table(); ?>
+        </div>
+    </div>
+    <?php
+}
+
+/**
+ * Handle user management form actions
+ */
+function vqr_handle_user_management_actions() {
+    if ($_POST['action'] === 'update_user_plan') {
+        $user_id = intval($_POST['user_id']);
+        $new_plan = sanitize_text_field($_POST['new_plan']);
+        
+        if (vqr_admin_update_user_plan($user_id, $new_plan)) {
+            echo '<div class="notice notice-success"><p>User plan updated successfully!</p></div>';
+        } else {
+            echo '<div class="notice notice-error"><p>Failed to update user plan.</p></div>';
+        }
+    }
+    
+    if ($_POST['action'] === 'update_user_quota') {
+        $user_id = intval($_POST['user_id']);
+        $new_quota = intval($_POST['new_quota']);
+        
+        if (vqr_admin_set_user_quota($user_id, $new_quota)) {
+            echo '<div class="notice notice-success"><p>User quota updated successfully!</p></div>';
+        } else {
+            echo '<div class="notice notice-error"><p>Failed to update user quota.</p></div>';
+        }
+    }
+}
+
+/**
+ * Display QR customers table
+ */
+function vqr_display_qr_customers_table() {
+    // Get all QR customers
+    $qr_customers = get_users(array(
+        'role__in' => array('qr_customer_free', 'qr_customer_starter', 'qr_customer_pro', 'qr_customer_enterprise'),
+        'orderby' => 'registered',
+        'order' => 'DESC'
+    ));
+    
+    // If no role-based users, get users with QR meta
+    if (empty($qr_customers)) {
+        $qr_customers = get_users(array(
+            'meta_key' => 'vqr_subscription_plan',
+            'meta_compare' => 'EXISTS',
+            'orderby' => 'registered',
+            'order' => 'DESC'
+        ));
+    }
+    
+    if (empty($qr_customers)) {
+        echo '<p>No QR customers found.</p>';
+        return;
+    }
+    
+    ?>
+    <table class="wp-list-table widefat fixed striped">
+        <thead>
+            <tr>
+                <th>User</th>
+                <th>Email</th>
+                <th>WordPress Role</th>
+                <th>Current Plan</th>
+                <th>Quota</th>
+                <th>Usage</th>
+                <th>QR Codes</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php foreach ($qr_customers as $user): 
+                $user_plan = vqr_get_user_plan($user->ID);
+                $quota = vqr_get_user_quota($user->ID);
+                $usage = vqr_get_user_usage($user->ID);
+                
+                global $wpdb;
+                $qr_count = $wpdb->get_var($wpdb->prepare(
+                    "SELECT COUNT(*) FROM {$wpdb->prefix}vqr_codes WHERE user_id = %d",
+                    $user->ID
+                ));
+                
+                $role_names = array(
+                    'qr_customer_free' => 'QR Customer (Free)',
+                    'qr_customer_starter' => 'QR Customer (Starter)', 
+                    'qr_customer_pro' => 'QR Customer (Pro)',
+                    'qr_customer_enterprise' => 'QR Customer (Enterprise)'
+                );
+                
+                $user_role = !empty($user->roles) ? $user->roles[0] : 'none';
+                $role_display = isset($role_names[$user_role]) ? $role_names[$user_role] : ucfirst(str_replace('_', ' ', $user_role));
+            ?>
+            <tr>
+                <td>
+                    <strong><?php echo esc_html($user->display_name); ?></strong><br>
+                    <small>ID: <?php echo $user->ID; ?></small>
+                </td>
+                <td><?php echo esc_html($user->user_email); ?></td>
+                <td>
+                    <span class="role-badge role-<?php echo esc_attr($user_role); ?>">
+                        <?php echo esc_html($role_display); ?>
+                    </span>
+                </td>
+                <td>
+                    <strong style="color: <?php echo $user_plan === 'enterprise' ? '#9333ea' : ($user_plan === 'pro' ? '#059669' : ($user_plan === 'starter' ? '#0891b2' : '#6b7280')); ?>">
+                        <?php echo ucfirst($user_plan); ?>
+                    </strong>
+                </td>
+                <td>
+                    <?php echo $quota === -1 ? 'Unlimited' : number_format($quota); ?>
+                </td>
+                <td>
+                    <span style="color: <?php echo ($quota !== -1 && $usage / $quota > 0.8) ? '#dc2626' : '#059669'; ?>">
+                        <?php echo number_format($usage); ?>
+                        <?php if ($quota !== -1): ?>
+                            (<?php echo round(($usage / $quota) * 100, 1); ?>%)
+                        <?php endif; ?>
+                    </span>
+                </td>
+                <td><?php echo number_format($qr_count); ?></td>
+                <td>
+                    <button type="button" class="button button-small" onclick="vqrShowUserModal(<?php echo $user->ID; ?>)">
+                        Manage
+                    </button>
+                </td>
+            </tr>
+            <?php endforeach; ?>
+        </tbody>
+    </table>
+    
+    <!-- User Management Modal -->
+    <div id="vqr-user-modal" style="display: none;">
+        <div class="vqr-modal-backdrop"></div>
+        <div class="vqr-modal-content">
+            <div class="vqr-modal-header">
+                <h3>Manage User</h3>
+                <button type="button" class="vqr-modal-close" onclick="vqrCloseUserModal()">&times;</button>
+            </div>
+            <div class="vqr-modal-body" id="vqr-modal-body">
+                <!-- Dynamic content -->
+            </div>
+        </div>
+    </div>
+    
+    <style>
+    .role-badge {
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+    .role-qr_customer_free { background: #f3f4f6; color: #374151; }
+    .role-qr_customer_starter { background: #dbeafe; color: #1e40af; }
+    .role-qr_customer_pro { background: #d1fae5; color: #065f46; }
+    .role-qr_customer_enterprise { background: #e9d5ff; color: #6b21a8; }
+    
+    #vqr-user-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 100000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .vqr-modal-backdrop {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+    }
+    
+    .vqr-modal-content {
+        position: relative;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        max-width: 500px;
+        width: 90%;
+        max-height: 80vh;
+        overflow: hidden;
+    }
+    
+    .vqr-modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 20px;
+        border-bottom: 1px solid #e5e7eb;
+    }
+    
+    .vqr-modal-header h3 {
+        margin: 0;
+    }
+    
+    .vqr-modal-close {
+        background: none;
+        border: none;
+        font-size: 20px;
+        cursor: pointer;
+        padding: 0;
+        width: 30px;
+        height: 30px;
+    }
+    
+    .vqr-modal-body {
+        padding: 20px;
+        max-height: 60vh;
+        overflow-y: auto;
+    }
+    </style>
+    
+    <script>
+    function vqrShowUserModal(userId) {
+        // You'll need to implement the AJAX call to get user details
+        // For now, just show a placeholder
+        document.getElementById('vqr-modal-body').innerHTML = `
+            <form method="post">
+                <?php wp_nonce_field('vqr_user_management', 'vqr_user_nonce'); ?>
+                <input type="hidden" name="user_id" value="${userId}">
+                
+                <h4>Change Plan</h4>
+                <p>
+                    <label>New Plan:</label><br>
+                    <select name="new_plan" required>
+                        <option value="free">Free</option>
+                        <option value="starter">Starter</option>
+                        <option value="pro">Pro</option>
+                        <option value="enterprise">Enterprise</option>
+                    </select>
+                </p>
+                <p>
+                    <input type="submit" name="action" value="update_user_plan" class="button button-primary">
+                </p>
+                
+                <hr>
+                
+                <h4>Set Custom Quota</h4>
+                <p>
+                    <label>Monthly Quota (-1 for unlimited):</label><br>
+                    <input type="number" name="new_quota" min="-1" step="1">
+                </p>
+                <p>
+                    <input type="submit" name="action" value="update_user_quota" class="button button-secondary">
+                </p>
+            </form>
+        `;
+        document.getElementById('vqr-user-modal').style.display = 'flex';
+    }
+    
+    function vqrCloseUserModal() {
+        document.getElementById('vqr-user-modal').style.display = 'none';
+    }
+    
+    // Close modal when clicking backdrop
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('vqr-modal-backdrop')) {
+            vqrCloseUserModal();
+        }
+    });
+    </script>
+    <?php
+}
+
