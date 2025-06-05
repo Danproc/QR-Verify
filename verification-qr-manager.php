@@ -31,14 +31,17 @@ spl_autoload_register( function( $class ) {
     }
 } );
 
-// Start session if needed (only on frontend)
-if (!is_admin() && !session_id()) {
-    session_start();
-}
+// Start session on init if needed (only on frontend)
+add_action('init', function() {
+    if (!is_admin() && !wp_doing_ajax() && !session_id()) {
+        session_start();
+    }
+});
 
 // Include required files
 require_once VQR_PLUGIN_DIR . 'includes/database.php';
 require_once VQR_PLUGIN_DIR . 'includes/strain-post-type.php';
+require_once VQR_PLUGIN_DIR . 'includes/strain-ownership.php';
 require_once VQR_PLUGIN_DIR . 'includes/strain-templates.php';
 require_once VQR_PLUGIN_DIR . 'includes/admin-page-modern.php';
 require_once VQR_PLUGIN_DIR . 'includes/qr-generator.php';
@@ -46,6 +49,23 @@ require_once VQR_PLUGIN_DIR . 'includes/qr-scanner.php';
 require_once VQR_PLUGIN_DIR . 'includes/shortcodes.php';
 require_once VQR_PLUGIN_DIR . 'includes/download-handlers.php';
 require_once VQR_PLUGIN_DIR . 'includes/pdf-generator.php';
+
+// Include user roles and capabilities
+require_once VQR_PLUGIN_DIR . 'includes/user-roles.php';
+require_once VQR_PLUGIN_DIR . 'includes/activation-helper.php';
+require_once VQR_PLUGIN_DIR . 'includes/email-verification.php';
+require_once VQR_PLUGIN_DIR . 'includes/terms-of-service.php';
+
+// Include frontend system
+require_once VQR_PLUGIN_DIR . 'includes/frontend-router.php';
+require_once VQR_PLUGIN_DIR . 'includes/frontend-ajax.php';
+require_once VQR_PLUGIN_DIR . 'includes/strain-ajax.php';
+
+// Include admin quota management
+require_once VQR_PLUGIN_DIR . 'includes/admin-quota-ajax.php';
+require_once VQR_PLUGIN_DIR . 'includes/user-profile-integration.php';
+require_once VQR_PLUGIN_DIR . 'includes/user-profile-image.php';
+require_once VQR_PLUGIN_DIR . 'includes/account-deletion.php';
 
 // Enqueue admin styles
 add_action( 'admin_enqueue_scripts', function() {
@@ -63,3 +83,29 @@ register_activation_hook( __FILE__, 'vqr_create_tables' );
 
 // Check for database updates on plugins loaded
 add_action( 'plugins_loaded', 'vqr_check_db_update' );
+
+// Update email verification table schema
+add_action( 'admin_init', function() {
+    if (current_user_can('manage_options')) {
+        vqr_update_email_verification_table();
+    }
+});
+
+// One-time setup for user roles (will only run once)
+add_action('admin_init', function() {
+    if (current_user_can('manage_options') && !get_option('vqr_roles_setup_complete')) {
+        vqr_force_setup_roles();
+        update_option('vqr_roles_setup_complete', true);
+    }
+});
+
+// Flush rewrite rules on activation (for frontend routing)
+register_activation_hook( __FILE__, function() {
+    vqr_create_tables();
+    vqr_create_custom_roles();
+    
+    // Trigger legal pages creation
+    do_action('vqr_plugin_activated');
+    
+    flush_rewrite_rules();
+} );
