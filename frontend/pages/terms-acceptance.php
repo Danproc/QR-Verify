@@ -214,6 +214,22 @@ ob_start();
     padding: var(--space-lg);
 }
 
+.vqr-page-header {
+    margin-bottom: var(--space-xl);
+}
+
+.vqr-page-title {
+    font-size: var(--font-size-3xl);
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0 0 var(--space-xs) 0;
+}
+
+.vqr-page-description {
+    color: var(--text-muted);
+    margin: 0;
+}
+
 .vqr-tos-icon {
     font-size: 64px;
     margin-bottom: var(--space-md);

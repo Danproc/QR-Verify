@@ -37,6 +37,30 @@
     object-fit: contain;
 }
 
+/* Verify 420 Logo Link */
+.vqr-verify420-logo-link {
+    display: inline-block;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    text-decoration: none;
+}
+
+.vqr-verify420-logo-link:hover {
+    opacity: 0.8;
+    transform: scale(1.05);
+}
+
+.vqr-verify420-logo-link:hover .vqr-verify420-logo {
+    filter: brightness(1.1);
+}
+
+.vqr-verify420-logo {
+    cursor: pointer;
+}
+
+.vqr-custom-logo {
+    /* Custom logos are not clickable */
+}
+
 /* Header Section */
 .vqr-header {
     text-align: center;

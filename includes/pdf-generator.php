@@ -215,3 +215,155 @@ function vqr_download_pdf_sheet() {
     exit;
 }
 add_action( 'admin_post_download_qr_pdf', 'vqr_download_pdf_sheet' );
+
+/**
+ * Generate PDF sticker sheet for order download
+ */
+function vqr_generate_sticker_sheet_pdf($qr_codes, $with_cutlines = true) {
+    if (empty($qr_codes)) {
+        return false;
+    }
+    
+    // Layout configuration - optimized for sticker printing
+    $pageW = 210; // A4 width in mm
+    $pageH = 297; // A4 height in mm
+    $mLeft = 10; $mRight = 10;
+    $mTop = 10; $mBot = 10;
+    $stW = 35; // Sticker width in mm
+    $stH = 35; // Sticker height in mm
+    $gX = 5; $gY = 5; // Gaps between stickers
+    
+    $usableW = $pageW - $mLeft - $mRight;
+    $usableH = $pageH - $mTop - $mBot;
+    $perRow = max(1, floor(($usableW + $gX) / ($stW + $gX)));
+    $perCol = max(1, floor(($usableH + $gY) / ($stH + $gY)));
+    $perPage = $perRow * $perCol;
+    
+    // Start building HTML for PDF
+    $html = '<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        @page {
+            size: A4;
+            margin: ' . $mTop . 'mm ' . $mRight . 'mm ' . $mBot . 'mm ' . $mLeft . 'mm;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            font-size: 8px;
+        }
+        .page {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+        .sticker-grid {
+            display: grid;
+            grid-template-columns: repeat(' . $perRow . ', ' . $stW . 'mm);
+            grid-template-rows: repeat(' . $perCol . ', ' . $stH . 'mm);
+            gap: ' . $gY . 'mm ' . $gX . 'mm;
+            width: 100%;
+            height: 100%;
+        }
+        .sticker {
+            width: ' . $stW . 'mm;
+            height: ' . $stH . 'mm;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border: ' . ($with_cutlines ? '0.5px dashed #ccc;' : 'none;') . '
+            box-sizing: border-box;
+            padding: 2mm;
+        }
+        .qr-image {
+            max-width: ' . ($stW - 4) . 'mm;
+            max-height: ' . ($stH - 8) . 'mm;
+            width: auto;
+            height: auto;
+        }
+        .batch-code {
+            font-size: 6px;
+            margin-top: 1mm;
+            text-align: center;
+            font-weight: bold;
+            color: #333;
+        }
+        .page-break {
+            page-break-before: always;
+        }
+    </style>
+</head>
+<body>';
+    
+    $current_page = 0;
+    $current_position = 0;
+    
+    foreach ($qr_codes as $index => $qr_code) {
+        // Start new page if needed
+        if ($current_position === 0) {
+            if ($current_page > 0) {
+                $html .= '<div class="page-break"></div>';
+            }
+            $html .= '<div class="page"><div class="sticker-grid">';
+            $current_page++;
+        }
+        
+        // Get QR code image data
+        $qr_image_data = '';
+        if (!empty($qr_code->qr_code)) {
+            if (strpos($qr_code->qr_code, home_url()) === 0) {
+                // Local file
+                $qr_image_path = str_replace(home_url(), ABSPATH, $qr_code->qr_code);
+                $qr_image_path = str_replace('//', '/', $qr_image_path);
+                
+                if (file_exists($qr_image_path)) {
+                    $image_data = file_get_contents($qr_image_path);
+                    if ($image_data !== false) {
+                        $image_type = pathinfo($qr_image_path, PATHINFO_EXTENSION);
+                        $qr_image_data = 'data:image/' . $image_type . ';base64,' . base64_encode($image_data);
+                    }
+                }
+            } else {
+                // Remote URL - use directly
+                $qr_image_data = $qr_code->qr_code;
+            }
+        }
+        
+        // Add sticker to HTML
+        $html .= '<div class="sticker">';
+        if ($qr_image_data) {
+            $html .= '<img src="' . $qr_image_data . '" alt="QR Code" class="qr-image">';
+        }
+        $html .= '<div class="batch-code">' . htmlspecialchars($qr_code->batch_code) . '</div>';
+        $html .= '</div>';
+        
+        $current_position++;
+        
+        // Check if page is full
+        if ($current_position >= $perPage) {
+            $html .= '</div></div>'; // Close sticker-grid and page
+            $current_position = 0;
+        }
+    }
+    
+    // Close any remaining open page
+    if ($current_position > 0) {
+        // Fill remaining spots with empty stickers if needed
+        while ($current_position < $perPage) {
+            $html .= '<div class="sticker"></div>';
+            $current_position++;
+        }
+        $html .= '</div></div>'; // Close sticker-grid and page
+    }
+    
+    $html .= '</body></html>';
+    
+    // For now, return HTML that can be used for printing
+    // In a real implementation, you'd use a library like TCPDF or Dompdf
+    return $html;
+}

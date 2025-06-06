@@ -302,13 +302,16 @@ code, kbd {
     background: #ffffff;
     border: none;
     margin: 0;
+    position: relative;
 }
 
 /* Table scroll wrapper for mobile */
 .vqr-table-scroll {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
+    position: relative;
 }
+
 
 .vqr-table-header {
     padding: 20px;

@@ -49,6 +49,7 @@ function vqr_register_strain_post_type() {
         'supports' => array(
             'title',
             'editor',
+            'author',
             'custom-fields',
         ),
         'rewrite' => false,
@@ -377,3 +378,101 @@ function vqr_admin_scripts($hook) {
     }
 }
 add_action('admin_enqueue_scripts', 'vqr_admin_scripts');
+
+/**
+ * Add custom columns to Strain admin list table
+ */
+function vqr_strain_admin_columns($columns) {
+    // Insert user column after title but before companies
+    $new_columns = array();
+    
+    foreach ($columns as $key => $value) {
+        $new_columns[$key] = $value;
+        
+        // Add user column after title
+        if ($key === 'title') {
+            $new_columns['strain_user'] = 'Owner';
+        }
+    }
+    
+    return $new_columns;
+}
+add_filter('manage_strain_posts_columns', 'vqr_strain_admin_columns');
+
+/**
+ * Display content for custom strain admin columns
+ */
+function vqr_strain_admin_column_content($column, $post_id) {
+    switch ($column) {
+        case 'strain_user':
+            $post = get_post($post_id);
+            if ($post && $post->post_author) {
+                $user = get_user_by('ID', $post->post_author);
+                if ($user) {
+                    // Display user info with plan badge if available
+                    $user_plan = vqr_get_user_plan($post->post_author);
+                    $plan_colors = array(
+                        'free' => '#6b7280',
+                        'starter' => '#0891b2', 
+                        'pro' => '#059669',
+                        'enterprise' => '#9333ea'
+                    );
+                    $plan_color = isset($plan_colors[$user_plan]) ? $plan_colors[$user_plan] : '#6b7280';
+                    
+                    echo '<div class="strain-user-info">';
+                    echo '<strong>' . esc_html($user->display_name ?: $user->user_login) . '</strong><br>';
+                    echo '<small style="color: #666;">' . esc_html($user->user_email) . '</small><br>';
+                    echo '<span class="strain-plan-badge" style="background: ' . esc_attr($plan_color) . '; color: white; padding: 2px 6px; border-radius: 3px; font-size: 11px; font-weight: 600; text-transform: uppercase; margin-top: 4px; display: inline-block;">' . esc_html($user_plan) . '</span>';
+                    echo '</div>';
+                } else {
+                    echo '<em style="color: #999;">User not found (ID: ' . esc_html($post->post_author) . ')</em>';
+                }
+            } else {
+                echo '<em style="color: #999;">No owner assigned</em>';
+            }
+            break;
+    }
+}
+add_action('manage_strain_posts_custom_column', 'vqr_strain_admin_column_content', 10, 2);
+
+/**
+ * Make strain user column sortable
+ */
+function vqr_strain_admin_sortable_columns($columns) {
+    $columns['strain_user'] = 'author';
+    return $columns;
+}
+add_filter('manage_edit-strain_sortable_columns', 'vqr_strain_admin_sortable_columns');
+
+/**
+ * Add custom CSS for strain admin columns
+ */
+function vqr_strain_admin_css() {
+    global $post_type;
+    if ($post_type === 'strain') {
+        ?>
+        <style>
+        .column-strain_user {
+            width: 200px;
+        }
+        
+        .strain-user-info {
+            line-height: 1.4;
+        }
+        
+        .strain-plan-badge {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        /* Responsive adjustments */
+        @media screen and (max-width: 782px) {
+            .column-strain_user {
+                width: auto;
+                min-width: 150px;
+            }
+        }
+        </style>
+        <?php
+    }
+}
+add_action('admin_head', 'vqr_strain_admin_css');

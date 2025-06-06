@@ -12,6 +12,7 @@ defined('ABSPATH') || exit;
 function vqr_init_frontend_router() {
     // Add rewrite rules for /app/ URLs
     add_rewrite_rule('^app/?$', 'index.php?vqr_app_page=dashboard', 'top');
+    add_rewrite_rule('^app/test-analytics/?$', 'index.php?vqr_app_page=test-analytics', 'top');
     add_rewrite_rule('^app/preview/([0-9]+)/?$', 'index.php?vqr_app_page=preview&strain_id=$matches[1]', 'top');
     add_rewrite_rule('^app/([^/]+)/?$', 'index.php?vqr_app_page=$matches[1]', 'top');
     add_rewrite_rule('^app/([^/]+)/([^/]+)/?$', 'index.php?vqr_app_page=$matches[1]&vqr_app_subpage=$matches[2]', 'top');
@@ -62,6 +63,12 @@ function vqr_load_app_page($page) {
     if (current_user_can('manage_options') && !in_array($page, ['logout'])) {
         wp_redirect(admin_url('admin.php?page=verification_qr_manager'));
         exit;
+    }
+    
+    // Handle special test page
+    if ($page === 'test-analytics') {
+        include VQR_PLUGIN_DIR . 'test-analytics-simple.php';
+        return;
     }
     
     // Load page template

@@ -49,6 +49,7 @@ require_once VQR_PLUGIN_DIR . 'includes/qr-scanner.php';
 require_once VQR_PLUGIN_DIR . 'includes/shortcodes.php';
 require_once VQR_PLUGIN_DIR . 'includes/download-handlers.php';
 require_once VQR_PLUGIN_DIR . 'includes/pdf-generator.php';
+require_once VQR_PLUGIN_DIR . 'includes/security-analytics.php';
 
 // Include user roles and capabilities
 require_once VQR_PLUGIN_DIR . 'includes/user-roles.php';
@@ -66,6 +67,9 @@ require_once VQR_PLUGIN_DIR . 'includes/admin-quota-ajax.php';
 require_once VQR_PLUGIN_DIR . 'includes/user-profile-integration.php';
 require_once VQR_PLUGIN_DIR . 'includes/user-profile-image.php';
 require_once VQR_PLUGIN_DIR . 'includes/account-deletion.php';
+
+// Include settings management
+require_once VQR_PLUGIN_DIR . 'includes/qr-settings.php';
 
 // Enqueue admin styles
 add_action( 'admin_enqueue_scripts', function() {
@@ -88,6 +92,7 @@ add_action( 'plugins_loaded', 'vqr_check_db_update' );
 add_action( 'admin_init', function() {
     if (current_user_can('manage_options')) {
         vqr_update_email_verification_table();
+        vqr_update_security_alerts_table();
     }
 });
 
@@ -96,6 +101,13 @@ add_action('admin_init', function() {
     if (current_user_can('manage_options') && !get_option('vqr_roles_setup_complete')) {
         vqr_force_setup_roles();
         update_option('vqr_roles_setup_complete', true);
+    }
+});
+
+// Ensure security tables exist (check on every admin load)
+add_action('admin_init', function() {
+    if (current_user_can('manage_options') && function_exists('vqr_ensure_security_tables')) {
+        vqr_ensure_security_tables();
     }
 });
 

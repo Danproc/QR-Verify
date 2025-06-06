@@ -129,6 +129,14 @@ if ($_POST && isset($_POST['vqr_register_nonce']) && wp_verify_nonce($_POST['vqr
             margin-bottom: var(--space-md);
         }
         
+        .vqr-register-logo img {
+            transition: transform 0.2s ease;
+        }
+        
+        .vqr-register-logo:hover img {
+            transform: scale(1.05);
+        }
+        
         .vqr-register-title {
             font-size: var(--font-size-2xl);
             font-weight: 600;
@@ -280,12 +288,21 @@ if ($_POST && isset($_POST['vqr_register_nonce']) && wp_verify_nonce($_POST['vqr
 </head>
 <body class="vqr-app">
     <div class="vqr-register-container">
+<?php 
+        $global_logo = vqr_get_global_logo();
+        ?>
         <div class="vqr-register-header">
             <a href="<?php echo home_url(); ?>" class="vqr-register-logo">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-                </svg>
-                Verify 420
+                <?php if ($global_logo): ?>
+                    <img src="<?php echo esc_url($global_logo['url']); ?>" 
+                         alt="<?php echo esc_attr($global_logo['alt']); ?>" 
+                         style="height: 48px; width: auto; max-width: 200px; object-fit: contain;">
+                <?php else: ?>
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                    </svg>
+                    <span>Verify 420</span>
+                <?php endif; ?>
             </a>
             
             <h1 class="vqr-register-title">Create your account</h1>

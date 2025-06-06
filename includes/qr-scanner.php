@@ -30,6 +30,17 @@ function vqr_handle_qr_scan() {
         return;
     }
 
+    // Log security scan data BEFORE updating count
+    if (function_exists('vqr_log_security_scan')) {
+        $security_result = vqr_log_security_scan($qr_id, $qr_code->post_id);
+        // Debug: Log if security logging failed
+        if ($security_result === false) {
+            error_log("VQR Security: Failed to log scan for QR key: " . $qr_id);
+        }
+    } else {
+        error_log("VQR Security: vqr_log_security_scan function not found");
+    }
+
     // Bump the count
     $new_count = $qr_code->scan_count + 1;
     $wpdb->update(

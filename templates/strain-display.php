@@ -9,12 +9,56 @@
 <body class="vqr-strain-page vqr-layout-responsive">
     <div class="vqr-container vqr-main-container">
         
+        <!-- Preview Mode Banner -->
+        <?php if (isset($is_preview) && $is_preview): ?>
+            <div class="vqr-preview-banner">
+                <div class="vqr-preview-content">
+                    <span class="vqr-preview-icon">👁</span>
+                    <span class="vqr-preview-text">Preview Mode - This is how your strain will appear to customers</span>
+                </div>
+            </div>
+            <style>
+                .vqr-preview-banner {
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    color: white;
+                    padding: 12px 20px;
+                    margin-bottom: 20px;
+                    border-radius: 8px;
+                    text-align: center;
+                    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                }
+                .vqr-preview-content {
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 8px;
+                    font-weight: 500;
+                }
+                .vqr-preview-icon {
+                    font-size: 18px;
+                }
+            </style>
+        <?php endif; ?>
+        
         <!-- Logo Section -->
         <?php if (isset($strain_data['logo'])): ?>
             <div class="vqr-logo-section">
-                <img src="<?php echo esc_url($strain_data['logo']['url']); ?>" 
-                     alt="<?php echo esc_attr($strain_data['title']); ?> Logo" 
-                     class="vqr-centered-logo">
+                <?php if (isset($strain_data['logo']['is_verify420']) && $strain_data['logo']['is_verify420']): ?>
+                    <!-- Verify 420 logo (clickable to homepage) -->
+                    <a href="<?php echo esc_url($strain_data['logo']['home_url']); ?>" 
+                       target="_blank" 
+                       class="vqr-verify420-logo-link"
+                       title="Verified by Verify 420">
+                        <img src="<?php echo esc_url($strain_data['logo']['url']); ?>" 
+                             alt="Verified by Verify 420" 
+                             class="vqr-centered-logo vqr-verify420-logo">
+                    </a>
+                <?php else: ?>
+                    <!-- Custom user logo -->
+                    <img src="<?php echo esc_url($strain_data['logo']['url']); ?>" 
+                         alt="<?php echo esc_attr($strain_data['title']); ?> Logo" 
+                         class="vqr-centered-logo vqr-custom-logo">
+                <?php endif; ?>
             </div>
         <?php endif; ?>
         
